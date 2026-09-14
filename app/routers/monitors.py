@@ -87,3 +87,47 @@ def delete_monitor(monitor_id: int, db: Session = Depends(get_db)):
     db.delete(monitor)
     db.commit()
     return
+
+
+@router.post(
+    "/{monitor_id}/pause",
+    status_code=200,
+    response_model=Monitor,
+)
+def pause_monitor(monitor_id: int, db: Session = Depends(get_db)):
+    monitor = db.get(MonitorModel, monitor_id)
+
+    if monitor is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Monitor not found",
+        )
+
+    monitor.is_active = False
+
+    db.commit()
+    db.refresh(monitor)
+
+    return monitor
+
+
+@router.post(
+    "/{monitor_id}/resume",
+    status_code=200,
+    response_model=Monitor,
+)
+def resume_monitor(monitor_id: int, db: Session = Depends(get_db)):
+    monitor = db.get(MonitorModel, monitor_id)
+
+    if monitor is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Monitor not found",
+        )
+
+    monitor.is_active = True
+
+    db.commit()
+    db.refresh(monitor)
+
+    return monitor
