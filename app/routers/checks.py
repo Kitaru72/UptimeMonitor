@@ -54,6 +54,8 @@ def create_check(monitor_id: int, db: Session = Depends(get_db)):
             status_code=404,
             detail="Monitor not found",
         )
+    if not monitor.is_active:
+        monitor.is_active = True
 
     check_result = check_url(monitor.url)
 
