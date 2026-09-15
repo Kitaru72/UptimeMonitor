@@ -68,6 +68,8 @@ def create_check(monitor_id: int, db: Session = Depends(get_db)):
         checked_at=datetime.now().astimezone(),
     )
 
+    monitor.last_checked_at = new_check.checked_at
+
     db.add(new_check)
     db.commit()
     db.refresh(new_check)

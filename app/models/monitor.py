@@ -16,3 +16,6 @@ class MonitorModel(Base):
         default=True,
         server_default=true(),
     )
+    last_checked_at: Mapped[datetime | None] = mapped_column(
+        nullable=True,
+    )
