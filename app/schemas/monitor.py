@@ -9,3 +9,4 @@ class Monitor(BaseModel):
     id: int
     url: HttpUrl
     created_at: datetime
+    is_active: bool
