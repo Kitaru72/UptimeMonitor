@@ -10,3 +10,4 @@ class Monitor(BaseModel):
     url: HttpUrl
     created_at: datetime
     is_active: bool
+    last_checked_at: datetime | None = None
