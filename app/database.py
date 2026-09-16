@@ -1,20 +1,26 @@
-from sqlalchemy import create_engine, event
+import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
-DATABASE_URL = "sqlite:///./uptime_monitor.db"
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},
+
+DATABASE_URL = URL.create(
+    drivername="postgresql+psycopg",
+    username=os.environ["DB_USER"],
+    password=os.environ["DB_PASSWORD"],
+    host=os.environ["DB_HOST"],
+    port=int(os.environ["DB_PORT"]),
+    database=os.environ["DB_NAME"],
 )
 
 
-@event.listens_for(engine, "connect")
-def enable_foreign_keys(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
+engine = create_engine(DATABASE_URL)
 
 
 SessionLocal = sessionmaker(
