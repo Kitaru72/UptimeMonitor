@@ -46,7 +46,7 @@ def get_checks(monitor_id: int, db: Session = Depends(get_db)):
     response_model=Check,
     status_code=201,
 )
-def create_check(monitor_id: int, db: Session = Depends(get_db)):
+async def create_check(monitor_id: int, db: Session = Depends(get_db)):
     monitor = db.get(MonitorModel, monitor_id)
 
     if monitor is None:
@@ -57,7 +57,7 @@ def create_check(monitor_id: int, db: Session = Depends(get_db)):
     if not monitor.is_active:
         monitor.is_active = True
 
-    check_result = check_url(monitor.url)
+    check_result = await check_url(monitor.url)
 
     new_check = CheckModel(
         monitor_id=monitor_id,
