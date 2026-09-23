@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Response, Depends
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_async_db
 from app.models.monitor import MonitorModel
 from app.schemas.monitor import Monitor, MonitorCreate
 
@@ -19,9 +19,9 @@ router = APIRouter(
     "",
     response_model=list[Monitor],
 )
-def get_monitors(db: Session = Depends(get_db)):
+async def get_monitors(db: AsyncSession = Depends(get_async_db)):
     statement = select(MonitorModel)
-    result = db.scalars(statement)
+    result = await db.scalars(statement)
     return result.all()
 
 
@@ -30,8 +30,8 @@ def get_monitors(db: Session = Depends(get_db)):
     "/{monitor_id}",
     response_model=Monitor,
 )
-def get_monitor(monitor_id: int, db: Session = Depends(get_db)):
-    monitor = db.get(MonitorModel, monitor_id)
+async def get_monitor(monitor_id: int, db: AsyncSession = Depends(get_async_db)):
+    monitor = await db.get(MonitorModel, monitor_id)
 
     if monitor is None:
         raise HTTPException(
@@ -48,20 +48,22 @@ def get_monitor(monitor_id: int, db: Session = Depends(get_db)):
     response_model=Monitor,
     status_code=201,
 )
-def create_monitor(monitor_data: MonitorCreate, response: Response, db: Session = Depends(get_db)):
-    statement = select(MonitorModel).where(
-        MonitorModel.url == str(monitor_data.url)
-    )
-    existing_monitor = db.scalar(statement)
+async def create_monitor(
+    monitor_data: MonitorCreate,
+    response: Response,
+    db: AsyncSession = Depends(get_async_db),
+):
+    statement = select(MonitorModel).where(MonitorModel.url == str(monitor_data.url))
+    existing_monitor = await db.scalar(statement)
     if existing_monitor is None:
         new_monitor = MonitorModel(
             url=str(monitor_data.url),
-            created_at=datetime.now().astimezone()
+            created_at=datetime.now(timezone.utc)
         )
 
         db.add(new_monitor)
-        db.commit()
-        db.refresh(new_monitor)
+        await db.commit()
+        await db.refresh(new_monitor)
 
         return new_monitor
 
@@ -75,8 +77,8 @@ def create_monitor(monitor_data: MonitorCreate, response: Response, db: Session 
     "/{monitor_id}",
     status_code=204,
 )
-def delete_monitor(monitor_id: int, db: Session = Depends(get_db)):
-    monitor = db.get(MonitorModel, monitor_id)
+async def delete_monitor(monitor_id: int, db: AsyncSession = Depends(get_async_db)):
+    monitor = await db.get(MonitorModel, monitor_id)
 
     if monitor is None:
         raise HTTPException(
@@ -84,8 +86,8 @@ def delete_monitor(monitor_id: int, db: Session = Depends(get_db)):
             detail="Monitor not found",
         )
 
-    db.delete(monitor)
-    db.commit()
+    await db.delete(monitor)
+    await db.commit()
     return
 
 
@@ -94,8 +96,8 @@ def delete_monitor(monitor_id: int, db: Session = Depends(get_db)):
     status_code=200,
     response_model=Monitor,
 )
-def pause_monitor(monitor_id: int, db: Session = Depends(get_db)):
-    monitor = db.get(MonitorModel, monitor_id)
+async def pause_monitor(monitor_id: int, db: AsyncSession = Depends(get_async_db)):
+    monitor = await db.get(MonitorModel, monitor_id)
 
     if monitor is None:
         raise HTTPException(
@@ -105,8 +107,8 @@ def pause_monitor(monitor_id: int, db: Session = Depends(get_db)):
 
     monitor.is_active = False
 
-    db.commit()
-    db.refresh(monitor)
+    await db.commit()
+    await db.refresh(monitor)
 
     return monitor
 
@@ -116,8 +118,8 @@ def pause_monitor(monitor_id: int, db: Session = Depends(get_db)):
     status_code=200,
     response_model=Monitor,
 )
-def resume_monitor(monitor_id: int, db: Session = Depends(get_db)):
-    monitor = db.get(MonitorModel, monitor_id)
+async def resume_monitor(monitor_id: int, db: AsyncSession = Depends(get_async_db)):
+    monitor = await db.get(MonitorModel, monitor_id)
 
     if monitor is None:
         raise HTTPException(
@@ -127,7 +129,7 @@ def resume_monitor(monitor_id: int, db: Session = Depends(get_db)):
 
     monitor.is_active = True
 
-    db.commit()
-    db.refresh(monitor)
+    await db.commit()
+    await db.refresh(monitor)
 
     return monitor
