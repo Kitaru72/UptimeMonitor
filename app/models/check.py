@@ -1,6 +1,5 @@
 from datetime import datetime
-
-from sqlalchemy import ForeignKey
+from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -20,4 +19,4 @@ class CheckModel(Base):
     http_status_code: Mapped[int | None] = mapped_column()
     error_type: Mapped[str | None] = mapped_column()
     duration_ms: Mapped[int] = mapped_column()
-    checked_at: Mapped[datetime] = mapped_column()
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, HTTPException, Depends
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.database import get_async_db
 from app.models.check import CheckModel
 from app.models.monitor import MonitorModel
 from app.schemas.check import Check
@@ -22,8 +22,8 @@ router = APIRouter(
     "",
     response_model=list[Check],
 )
-def get_checks(monitor_id: int, db: Session = Depends(get_db)):
-    monitor = db.get(MonitorModel, monitor_id)
+async def get_checks(monitor_id: int, db: AsyncSession = Depends(get_async_db)):
+    monitor = await db.get(MonitorModel, monitor_id)
 
     if monitor is None:
         raise HTTPException(
@@ -37,7 +37,7 @@ def get_checks(monitor_id: int, db: Session = Depends(get_db)):
         .order_by(CheckModel.id)
     )
 
-    result = db.scalars(statement)
+    result = await db.scalars(statement)
     return result.all()
 
 
@@ -46,8 +46,8 @@ def get_checks(monitor_id: int, db: Session = Depends(get_db)):
     response_model=Check,
     status_code=201,
 )
-async def create_check(monitor_id: int, db: Session = Depends(get_db)):
-    monitor = db.get(MonitorModel, monitor_id)
+async def create_check(monitor_id: int, db: AsyncSession = Depends(get_async_db)):
+    monitor = await db.get(MonitorModel, monitor_id)
 
     if monitor is None:
         raise HTTPException(
@@ -65,13 +65,13 @@ async def create_check(monitor_id: int, db: Session = Depends(get_db)):
         http_status_code=check_result["http_status_code"],
         error_type=check_result["error_type"],
         duration_ms=check_result["duration_ms"],
-        checked_at=datetime.now().astimezone(),
+        checked_at=datetime.now(timezone.utc),
     )
 
     monitor.last_checked_at = new_check.checked_at
 
     db.add(new_check)
-    db.commit()
-    db.refresh(new_check)
+    await db.commit()
+    await db.refresh(new_check)
 
     return new_check
