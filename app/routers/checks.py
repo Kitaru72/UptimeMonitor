@@ -1,14 +1,16 @@
 from datetime import datetime, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_async_db
 from app.models.check import CheckModel
 from app.models.monitor import MonitorModel
 from app.schemas.check import Check
+from app.schemas.pagination import PaginatedResponse
 from app.services.checker import check_url
 
 
@@ -20,9 +22,14 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=list[Check],
+    response_model=PaginatedResponse[Check],
 )
-async def get_checks(monitor_id: int, db: AsyncSession = Depends(get_async_db)):
+async def get_checks(
+    monitor_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0
+):
     monitor = await db.get(MonitorModel, monitor_id)
 
     if monitor is None:
@@ -31,14 +38,25 @@ async def get_checks(monitor_id: int, db: AsyncSession = Depends(get_async_db)):
             detail="Monitor not found",
         )
 
+    count_statement = select(func.count()).select_from(CheckModel).where(CheckModel.monitor_id == monitor_id)
+    total = await db.scalar(count_statement)
+
     statement = (
         select(CheckModel)
         .where(CheckModel.monitor_id == monitor_id)
-        .order_by(CheckModel.id)
+        .order_by(CheckModel.checked_at.desc(), CheckModel.id.desc())
+        .limit(limit)
+        .offset(offset)
     )
-
     result = await db.scalars(statement)
-    return result.all()
+    checks = result.all()
+
+    return {
+        "items": checks,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
 
 
 @router.post(

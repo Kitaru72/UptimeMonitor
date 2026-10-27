@@ -14,3 +14,4 @@ class Check(BaseModel):
     ) = None
     duration_ms: int
     checked_at: datetime
+

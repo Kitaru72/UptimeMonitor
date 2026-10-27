@@ -1,11 +1,13 @@
 from datetime import datetime, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Response, Depends
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Response, Depends, Query
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_async_db
 from app.models.monitor import MonitorModel
+from app.schemas.pagination import PaginatedResponse
 from app.schemas.monitor import Monitor, MonitorCreate
 
 router = APIRouter(
@@ -17,12 +19,31 @@ router = APIRouter(
 # GET ALL MONITORS
 @router.get(
     "",
-    response_model=list[Monitor],
+    response_model=PaginatedResponse[Monitor],
 )
-async def get_monitors(db: AsyncSession = Depends(get_async_db)):
-    statement = select(MonitorModel)
+async def get_monitors(
+    db: AsyncSession = Depends(get_async_db),
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0
+):
+    count_statement = select(func.count()).select_from(MonitorModel)
+    total = await db.scalar(count_statement) 
+
+    statement = (
+        select(MonitorModel)
+        .order_by(MonitorModel.id)
+        .limit(limit)
+        .offset(offset)
+    )
     result = await db.scalars(statement)
-    return result.all()
+    monitors = result.all()
+
+    return {
+        "items": monitors,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
 
 
 # GET ONE MONITOR VIA ID
