@@ -1,6 +1,7 @@
 import httpx
 import pytest
 import respx
+import asyncio
 
 from app.services.batch_checker import check_urls
 
@@ -8,6 +9,7 @@ from app.services.batch_checker import check_urls
 @pytest.mark.anyio
 @respx.mock
 async def test_check_urls_returns_results_in_input_order():
+    sem = asyncio.Semaphore(10)
     urls = [
         "https://example.com",
         "https://example2.com",
@@ -19,7 +21,7 @@ async def test_check_urls_returns_results_in_input_order():
         return_value=httpx.Response(500)
     )
 
-    results = await check_urls(urls)
+    results = await check_urls(urls, sem)
 
     assert len(results) == 2
 

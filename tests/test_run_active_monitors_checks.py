@@ -47,7 +47,7 @@ async def test_run_active_monitors_checks_creates_checks_and_updates_monitors(mo
 
     db = FakeDb(monitors)
 
-    async def fake_check_urls(urls):
+    async def fake_check_urls(urls, sem):
         return [
             {
                 "status": "UP",
