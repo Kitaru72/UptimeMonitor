@@ -10,13 +10,20 @@ from app.models.check import CheckModel
 from app.services.checker import check_url
 
 
-async def check_urls(urls: list[str]) -> list[dict]:
-    coroutines = [check_url(url) for url in urls]
+async def check_urls(urls: list[str], semaphore: asyncio.Semaphore) -> list[dict]:
+    async def check_url_with_limit(url):
+        async with semaphore:
+            return await check_url(url)
+
+    coroutines = [check_url_with_limit(url) for url in urls]
+
     results = await asyncio.gather(*coroutines)
     return results
 
 
 async def run_active_monitors_checks(db: AsyncSession) -> list[CheckModel]:
+    sem = asyncio.Semaphore(10)
+
     statement = (
         select(MonitorModel)
         .where(MonitorModel.is_active.is_(True))
@@ -26,7 +33,7 @@ async def run_active_monitors_checks(db: AsyncSession) -> list[CheckModel]:
     monitors = result.all()
 
     urls = [monitor.url for monitor in monitors]
-    responses = await check_urls(urls)
+    responses = await check_urls(urls, sem)
 
     current_time = datetime.now(timezone.utc)
 
