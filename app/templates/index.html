@@ -1,0 +1,111 @@
+<style>
+  .badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 30px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .badge-active {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+
+  .badge-paused {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+
+  .pause-button{
+
+  }
+
+  .resume-button{
+
+  }
+
+  li + li {
+    margin-top: 8px;
+  }
+</style>
+
+
+<h1>{{ title }}</h1>
+<p>UptimeMonitor - сервис для мониторинга доступности веб-ресурсов</p>
+
+<ul>
+    {% for monitor in monitors %}
+    <li><a
+        href="{{monitor.url}}"
+        target="_blank"
+        rel="noopener noreferrer"
+        >
+        {{monitor.url}}
+      </a>
+        {% if monitor.is_active %}
+            <span class="badge badge-active">Активен</span>
+            <button
+            type="button"
+            class="pause-button"
+            onclick="pauseMonitor({{ monitor.id }})"
+            >
+              Пауза
+            </button>
+        {% else %}
+            <span class="badge badge-paused">На паузе</span>
+            <button
+            type="button"
+            class="resume-button"
+            onclick="resumeMonitor({{ monitor.id }})"
+            >
+            Возобновить
+          </button>
+        {% endif %}
+      <a
+      class="history-button"
+      href="/monitors/{{ monitor.id }}/history"
+      >
+      История
+      </a>
+    </li>
+    {% else %}
+    <li>Мониторов пока нет</li>
+    {% endfor %}
+</ul>
+
+<script>
+  async function pauseMonitor(monitorId) {
+    try {
+      const response = await fetch(`/monitors/${monitorId}/pause`, {
+        method: "POST"
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert("Не удалось поставить монитор на паузу");
+      }
+    } catch (error) {
+      alert("Не удалось связаться с сервером");
+    }
+  }
+
+
+  async function resumeMonitor(monitorId) {
+    try {
+      const response = await fetch(`/monitors/${monitorId}/resume`, {
+        method: "POST"
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert("Не удалось возобновить монитор");
+      }
+    } catch (error) {
+      alert("Не удалось связаться с сервером");
+    }
+  }
+</script>

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_async_db
 
+
 router = APIRouter(
     tags=["service"]
 )
