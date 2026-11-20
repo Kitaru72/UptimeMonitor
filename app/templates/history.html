@@ -1,0 +1,26 @@
+<style>
+    li + li {
+        margin-top: 8px;
+    }
+</style>
+
+<h1>{{ title }}</h1>
+<ul>
+  {% for check in checks %}
+    <li>
+      Время: {{ check.checked_at }}<br>
+      Статус: {{ check.status }}<br>
+
+      {% if check.http_status_code is none %}
+        Ошибка: {{ check.error_type }}<br>
+      {% else %}
+        HTTP-код: {{ check.http_status_code }}<br>
+      {% endif %}
+
+      Длительность: {{ check.duration_ms }} мс
+    </li>
+  {% else %}
+    <li>Проверок пока нет</li>
+  {% endfor %}
+</ul>
+<a href="/">На главную</a>
